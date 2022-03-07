@@ -1,0 +1,200 @@
+<script>
+    var board = [22, 20, 21, 23, 19, 21, 20, 22,    0,  0,  5,  5,  0,  0,  5,  0, 
+                18, 18, 18, 18, 18, 18, 18, 18,    5,  5,  0,  0,  0,  0,  5,  5,
+                0,  0,  0,  0,  0,  0,  0,  0,    5, 10, 15, 20, 20, 15, 10,  5,
+                0,  0,  0,  0,  0,  0,  0,  0,    5, 10, 20, 30, 30, 20, 10,  5,    
+                0,  0,  0,  0,  0,  0,  0,  0,    5, 10, 20, 30, 30, 20, 10,  5,
+                0,  0,  0,  0,  0,  0,  0,  0,    5, 10, 15, 20, 20, 15, 10,  5,
+                9,  9,  9,  9,  9,  9,  9,  9,    5,  5,  0,  0,  0,  0,  5,  5,
+                14, 12, 13, 15, 11, 13, 12, 14,    0,  0,  5,  5,  0,  0,  5,  0];
+    var coordinates = [                                    
+        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",     "i8","j8","k8","l8","m8","n8","o8", "p8",
+        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",     "i7","j7","k7","l7","m7","n7","o7", "p7",
+        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",     "i6","j6","k6","l6","m6","n6","o6", "p6",
+        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",     "i5","j5","k5","l5","m5","n5","o5", "p5",
+        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",     "i4","j4","k4","l4","m4","n4","o4", "p4",
+        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",     "i3","j3","k3","l3","m3","n3","o3", "p3",
+        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",     "i2","j2","k2","l2","m2","n2","o2", "p2",
+        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",     "i1","j1","k1","l1","m1","n1","o1", "p1",
+    ];
+    var pieces = [
+      ".", "-", "\u265F", "\u265A", "\u265E", "\u265D", "\u265C", "\u265B", 
+      "-", "\u2659", "-", "\u2654", "\u2658", "\u2657", "\u2656", "\u2655",  
+    ];
+    var piece_weights = [0, 0, -100, 0, -300, -350, -500, -900, 0, 100, 0, 0, 300, 350, 500, 900];
+    var move_offsets = [
+       15,  16,  17,   0,                          
+      -15, -16, -17,   0,                          
+        1,  16,  -1, -16,   0,                      
+        1,  16,  -1, -16,  15, -15, 17, -17,  0,    
+       14, -14,  18, -18,  31, -31, 33, -33,  0,    
+        3,  -1,  12,  21,  16,   7, 12                                                              
+    ];
+    WHITE = 8;
+    BLACK = 16;
+    var side = WHITE;
+    var best_source, best_target;
+    function search_position(side, depth, num, num1){
+      if (depth == 0){
+        var score = 0;
+        for (var square = 0; square < 128; square++){
+          if ((square & 0x88) == 0){
+            piece = board[square]
+            if (piece){
+              score += piece_weights[piece & 15];
+              (piece & WHITE) ? (score += board[square + 8]) : (score -= board[square + 8]);
+            }
+          }
+        }
+        return (side == WHITE) ? score: -score;
+      }
+      var old_num = num;      
+      var temp_source;             
+      var temp_target;             
+      var score = -10000;          
+      var piece, piece_type, directions, source_square, target_square, captured_square, captured_piece, step_vector;
+      for (var square = 0; square < 128; square++){
+        if ((square & 0x88) == 0){
+          source_square = square
+          piece = board[square];
+          if (piece & side){
+            piece_type = piece & 7;
+            directions = move_offsets[piece_type + 30];
+            //console.log(pieces[piece & 15] + ' ' + directions);
+            while(step_vector = move_offsets[++directions]){
+              target_square = source_square;
+              do{
+                target_square += step_vector;
+                captured_square = target_square;
+                if(target_square & 0x88) break;
+                captured_piece = board[captured_square];
+                if(captured_piece & side) break;
+                if(piece_type < 3 && !(step_vector & 7) != !captured_piece) break;
+                if((captured_piece & 7) == 3) return 10000;
+                board[captured_square] = 0;       
+                board[source_square] = 0;         
+                board[target_square] = piece;     
+                if(piece_type < 3) {
+                    if(target_square + step_vector + 1 & 0x80)    
+                        board[target_square] |= 7;               
+                }
+                score = -search_position(24 - side, depth - 1, -num1, -num);   
+                board[target_square] = 0;                   
+                board[source_square] = piece;               
+                board[captured_square] = captured_piece;   
+                best_source = source_square;
+                best_target = target_square;
+                if(score > num){
+                  if(score >= num1)
+                    return num1;   
+                  num = score;
+                  temp_source = source_square;
+                  temp_target = target_square;
+                }        
+                captured_piece += piece_type < 5;
+                if(piece_type < 3 & 6*side + (target_square & 0x70) == 0x80) captured_piece--;
+              }
+              while(captured_piece == 0)
+            }
+          }
+        }
+      }
+      if(num != old_num){
+          best_source = temp_source;
+          best_target = temp_target;
+      }
+      return num;
+    }
+    function print_board(){
+      var board_string = '';
+      for (var row = 0; row < 8; row++){
+        for (var col = 0; col < 16; col++){
+          var square = row * 16 + col;
+          if ((square & 0x88) == 0)
+            board_string += pieces[board[square] & 15] + ' ';
+        }
+        board_string += '\n'
+      }
+      console.log(board_string);
+    }
+    function draw_board(){
+      var chess_board = '<table align="center" cellspacing="0">';
+      for (var row = 0; row < 8; row++){
+        chess_board += '<tr>'
+        for (var col = 0; col < 16; col++){
+          var square = row * 16 + col;
+          if ((square & 0x88) == 0)
+            chess_board += '<td align="center" id="' + square + '"bgcolor="#' + ( ((col + row) % 2) ? 'aaa' : 'eee') + '" width="60" height="60" style="font-size: 50px;" onclick="make_move(this.id)"></td>'
+        }
+        chess_board += '</tr>'
+      }
+      chess_board += '</table>';
+      document.write(chess_board);
+    }
+    function update_board(){
+      for (var row = 0; row < 8; row++){
+        for (var col = 0; col < 16; col++){
+          var square = row * 16 + col;
+          if ((square & 0x88) == 0)
+            document.getElementById(square).innerHTML = pieces[board[square] & 15].replace('.', '');
+        }
+      }
+    }
+    var click_lock = false;
+    var user_source, user_target;
+    var search_depth = 3;
+    function make_move(sq) {
+      var click_sq = parseInt(sq, 10)
+      if(!click_lock && board[click_sq]){
+        document.getElementById(sq).style.backgroundColor = '#fff';
+        user_source = click_sq;
+        click_lock ^= 1;
+      }
+      else if(click_lock){
+        var col = user_source & 7;
+        var row = user_source >> 4;
+        var color = (col + row) % 2 ? 'aaa' : 'eee'
+        document.getElementById(user_source).style.backgroundColor = '#' + color;
+        board[click_sq] = board[user_source];
+        board[user_source] = 0;
+        if(((board[click_sq] == 9) && (click_sq >= 0 && click_sq <= 7)) ||
+           ((board[click_sq] == 18) && (click_sq >= 112 && click_sq <= 119)))
+            board[click_sq] |= 7;    
+        side = 24 - side;
+        click_lock ^= 1;
+        update_board();
+        setTimeout("think(search_depth)", 100);
+      }
+    }
+    function think(depth){
+      var score = search_position(side, depth, -10000, 10000);
+      board[best_target] = board[best_source];
+      board[best_source] = 0;
+      if(((board[best_target] == 9) && (best_target >= 0 && best_target <= 7)) ||
+         ((board[best_target] == 18) && (best_target >= 112 && best_target <= 119)))
+          board[best_target] |= 7;  
+      side = 24 - side;
+      if(score == 10000){
+        update_board();
+        setTimeout(
+          function(){
+            alert("White is checkmated!");
+            location.reload();
+          }, 100);
+      }  
+      else if(score == -10000){
+        setTimeout(
+          function(){
+            alert("Black is checkmated!");
+            location.reload();
+          }, 100);
+      }
+      else {
+        update_board();
+      }
+      print_board();
+      console.log('score: ', score);
+      console.log('move: ', coordinates[best_source] + coordinates[best_target]);}
+    draw_board();
+    update_board()
+    </script>

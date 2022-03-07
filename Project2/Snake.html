@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Snake Game</title>
+	<link rel="stylesheet" href="/Project2/style.css">
+</head>
+<body class="body">
+	<center><h1>Well Come to the Snake Game</h1></center>
+	<h1>Start the game by hiting Enter</h1>
+	<h2>Score: <span id="score"></span> </h2>
+	<h2>Max score: <span id="max_score"></span> </h2>
+	<h2>Deaths: <span id="deaths"></span> </h2>
+	<span>Move with the arrow keys | pause or continue with Enter</span>
+	<div id="stage" style="position:relative"></div>
+	<marquee >Snake Game</marquee>
+</body>
+	<script src="/Project2/Snake.js"></script>
+	<script type="text/javascript">
+		var game = new Game(20, 10, "stage", "score", "deaths", "max_score");
+	</script>
+</html>
